@@ -152,6 +152,28 @@ sub fetch_tracks_from_html {
 
 sub itunes_duration {
     my ($artist, $title) = @_;
+
+    # Medley: "Part A / Part B / Part C" — look up each component and sum
+    if ($title =~ m{/}) {
+        my @parts = split m{\s*/\s*}, $title;
+        my ($total_ms, $found) = (0, 0);
+        for my $part (@parts) {
+            $part =~ s/^\s+|\s+$//g;
+            next unless length($part) > 2;
+            my $ms = _itunes_lookup($artist, $part);
+            if ($ms > 0) { $total_ms += $ms; $found++; }
+            select(undef, undef, undef, 0.2);
+        }
+        if ($found > 0 && $total_ms > 30_000) {
+            return int($total_ms * scalar(@parts) / $found);
+        }
+    }
+
+    return _itunes_lookup($artist, $title);
+}
+
+sub _itunes_lookup {
+    my ($artist, $title) = @_;
     my $query = "$artist $title";
     $query =~ s/[^\x00-\x7F]//g;
     $query =~ s/[^a-zA-Z0-9 ]/ /g;
@@ -163,6 +185,22 @@ sub itunes_duration {
     my $resp = `curl -sL --compressed -A "Mozilla/5.0" "$url"`;
     if ($resp =~ /"resultCount"\s*:\s*[1-9]/ && $resp =~ /"trackTimeMillis"\s*:\s*(\d+)/) {
         return $1 if $1 > 30_000;
+    }
+    # Retry with title only
+    if ($artist) {
+        my $q2 = $title;
+        $q2 =~ s/[^\x00-\x7F]//g;
+        $q2 =~ s/[^a-zA-Z0-9 ]/ /g;
+        $q2 =~ s/ +/ /g; $q2 =~ s/^ | $//g;
+        if (length($q2) > 2) {
+            $q2 =~ s/ /+/g;
+            $url = "https://itunes.apple.com/search?term=$q2&media=music&entity=song&limit=5&country=US";
+            $resp = `curl -sL --compressed -A "Mozilla/5.0" "$url"`;
+            select(undef, undef, undef, 0.2);
+            if ($resp =~ /"resultCount"\s*:\s*[1-9]/ && $resp =~ /"trackTimeMillis"\s*:\s*(\d+)/) {
+                return $1 if $1 > 30_000;
+            }
+        }
     }
     return 0;
 }
