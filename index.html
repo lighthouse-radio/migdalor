@@ -108,36 +108,7 @@ body::after {
 }
 
 /* Static: flat line */
-.wave-line        { d: path("M0,22 L420,22"); }
-.wave-line-accent { d: path("M0,22 L420,22"); }
-
-/* Playing: organic mountain-range animation */
-.wave-playing .wave-line {
-  animation: waveform 4s ease-in-out infinite;
-}
-.wave-playing .wave-line-accent {
-  animation: waveform-b 3.2s ease-in-out infinite;
-  animation-delay: -1.1s;
-}
-
-@keyframes waveform {
-  0%   { d: path("M0,22 C35,22 70,22 105,22 C140,22 175,22 210,22 C245,22 280,22 315,22 C350,22 385,22 420,22"); }
-  15%  { d: path("M0,28 C35,12 70,34 105,16 C140,36 175,10 210,30 C245,14 280,38 315,18 C350,32 385,14 420,26"); }
-  30%  { d: path("M0,18 C35,36 70,10 105,32 C140,14 175,38 210,12 C245,34 280,16 315,36 C350,12 385,30 420,18"); }
-  50%  { d: path("M0,30 C35,10 70,38 105,14 C140,30 175,8 210,28 C245,12 280,32 315,10 C350,28 385,8 420,24"); }
-  65%  { d: path("M0,16 C35,34 70,12 105,36 C140,16 175,34 210,14 C245,38 280,12 315,34 C350,16 385,38 420,20"); }
-  80%  { d: path("M0,26 C35,14 70,32 105,18 C140,38 175,16 210,36 C245,18 280,36 315,14 C350,36 385,18 420,28"); }
-  100% { d: path("M0,22 C35,22 70,22 105,22 C140,22 175,22 210,22 C245,22 280,22 315,22 C350,22 385,22 420,22"); }
-}
-
-@keyframes waveform-b {
-  0%   { d: path("M0,22 C35,22 70,22 105,22 C140,22 175,22 210,22 C245,22 280,22 315,22 C350,22 385,22 420,22"); }
-  20%  { d: path("M0,14 C35,30 70,8 105,26 C140,10 175,32 210,16 C245,28 280,10 315,30 C350,14 385,28 420,18"); }
-  40%  { d: path("M0,32 C35,16 70,36 105,12 C140,32 175,14 210,34 C245,16 280,34 315,12 C350,32 385,14 420,30"); }
-  60%  { d: path("M0,20 C35,38 70,14 105,30 C140,12 175,36 210,18 C245,36 280,14 315,32 C350,18 385,36 420,20"); }
-  80%  { d: path("M0,34 C35,14 70,30 105,10 C140,28 175,10 210,26 C245,14 280,30 315,14 C350,28 385,12 420,24"); }
-  100% { d: path("M0,22 C35,22 70,22 105,22 C140,22 175,22 210,22 C245,22 280,22 315,22 C350,22 385,22 420,22"); }
-}
+/* Wave paths reset — animation driven by JS for cross-browser support */
 
 /* ── Now Playing ── */
 .now-playing {
@@ -401,12 +372,59 @@ const iconPlay   = document.getElementById('iconPlay');
 const iconPause  = document.getElementById('iconPause');
 const loadingMsg = document.getElementById('loadingMsg');
 const waveSvg    = document.getElementById('waveSvg');
+const _waveLine  = waveSvg.querySelector('.wave-line');
+const _waveLineB = waveSvg.querySelector('.wave-line-accent');
+
+// Wave keyframes: each entry is { t: 0..1, y: [13 control-point Y values] }
+const _WKA = [
+  { t: 0.00, y: [22,22,22,22,22,22,22,22,22,22,22,22,22] },
+  { t: 0.15, y: [28,12,34,16,36,10,30,14,38,18,32,14,26] },
+  { t: 0.30, y: [18,36,10,32,14,38,12,34,16,36,12,30,18] },
+  { t: 0.50, y: [30,10,38,14,30, 8,28,12,32,10,28, 8,24] },
+  { t: 0.65, y: [16,34,12,36,16,34,14,38,12,34,16,38,20] },
+  { t: 0.80, y: [26,14,32,18,38,16,36,18,36,14,36,18,28] },
+  { t: 1.00, y: [22,22,22,22,22,22,22,22,22,22,22,22,22] },
+];
+const _WKB = [
+  { t: 0.00, y: [22,22,22,22,22,22,22,22,22,22,22,22,22] },
+  { t: 0.20, y: [14,30, 8,26,10,32,16,28,10,30,14,28,18] },
+  { t: 0.40, y: [32,16,36,12,32,14,34,16,34,12,32,14,30] },
+  { t: 0.60, y: [20,38,14,30,12,36,18,36,14,32,18,36,20] },
+  { t: 0.80, y: [34,14,30,10,28,10,26,14,30,14,28,12,24] },
+  { t: 1.00, y: [22,22,22,22,22,22,22,22,22,22,22,22,22] },
+];
+const _WXS = [0,35,70,105,140,175,210,245,280,315,350,385,420];
+const _FLAT = 'M0,22 L420,22';
+
+function _buildWavePath(ys) {
+  return `M${_WXS[0]},${ys[0]|0} C${_WXS[1]},${ys[1]|0} ${_WXS[2]},${ys[2]|0} ${_WXS[3]},${ys[3]|0} C${_WXS[4]},${ys[4]|0} ${_WXS[5]},${ys[5]|0} ${_WXS[6]},${ys[6]|0} C${_WXS[7]},${ys[7]|0} ${_WXS[8]},${ys[8]|0} ${_WXS[9]},${ys[9]|0} C${_WXS[10]},${ys[10]|0} ${_WXS[11]},${ys[11]|0} ${_WXS[12]},${ys[12]|0}`;
+}
+function _eio(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
+function _waveYs(kfs, phase) {
+  let k1 = kfs[0], k2 = kfs[1];
+  for (let i = 0; i < kfs.length - 1; i++) {
+    if (phase <= kfs[i+1].t) { k1 = kfs[i]; k2 = kfs[i+1]; break; }
+  }
+  const span = k2.t - k1.t || 1;
+  const t = _eio((phase - k1.t) / span);
+  return k1.y.map((v, i) => v + (k2.y[i] - v) * t);
+}
+let _waveRaf = null, _waveT0 = null;
+function _waveFrame(ts) {
+  if (!_waveT0) _waveT0 = ts;
+  const e = ts - _waveT0;
+  _waveLine.setAttribute('d',  _buildWavePath(_waveYs(_WKA, (e % 4000) / 4000)));
+  _waveLineB.setAttribute('d', _buildWavePath(_waveYs(_WKB, ((e + 1100) % 3200) / 3200)));
+  _waveRaf = requestAnimationFrame(_waveFrame);
+}
+function _startWave() { if (!_waveRaf) { _waveT0 = null; _waveRaf = requestAnimationFrame(_waveFrame); } }
+function _stopWave()  { if (_waveRaf) { cancelAnimationFrame(_waveRaf); _waveRaf = null; } _waveLine.setAttribute('d', _FLAT); _waveLineB.setAttribute('d', _FLAT); }
 
 function setPlayingState(state) {
   playing = state;
   iconPlay.style.display  = state ? 'none' : '';
   iconPause.style.display = state ? ''     : 'none';
-  waveSvg.classList.toggle('wave-playing', state);
+  state ? _startWave() : _stopWave();
   document.getElementById('btnPlay').classList.toggle('is-playing', state);
 }
 
@@ -532,7 +550,7 @@ Promise.resolve(EPISODES_DATA.length ? EPISODES_DATA : fetch('episodes.json').th
     const idx = calcEpisodeIndex();
     currentIndex = idx;
     updateUI(idx);
-    loadingMsg.textContent = 'לחץ פליי להצטרף לשידור';
+    loadingMsg.textContent = 'TUNE IN AND DROP OUT';
     setPlayingState(false);
 
     document.addEventListener('click', function firstPlay() {
