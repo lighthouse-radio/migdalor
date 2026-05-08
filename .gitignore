@@ -1,0 +1,3 @@
+fetch_tracks_*.log
+*.log
+.claude/
