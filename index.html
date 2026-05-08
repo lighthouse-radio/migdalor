@@ -87,6 +87,16 @@ body::after {
   margin-bottom: 1.6rem;
 }
 
+/* ── Mobile: compress top section so play button is above the fold ── */
+@media (max-height: 750px), (max-width: 480px) {
+  .card         { padding: 1.4rem 2rem 2rem; }
+  .logo-img     { width: 140px; height: 140px; }
+  .lighthouse-wrap { margin-bottom: 0.5rem; }
+  .logo         { font-size: 2.2rem; margin-bottom: 0.9rem; }
+  .wave-container { margin-bottom: 1rem; }
+  .now-playing  { margin-bottom: 1.2rem; }
+}
+
 /* ── Wave visualizer ── */
 .wave-container {
   margin: 0 -1rem 1.8rem;
@@ -294,18 +304,13 @@ audio { display: none; }
     </svg>
   </div>
 
-  <!-- Now playing info -->
+  <!-- Now playing info: track only -->
   <div class="now-playing">
     <div class="now-label">מתנגן עכשיו</div>
     <div id="trackNow" style="display:none">
       <div class="track-artist" id="trackArtist"></div>
       <div class="track-title-display" id="trackTitle"></div>
     </div>
-    <div class="episode-meta">
-      <div class="episode-title" id="epTitle">טוען...</div>
-      <div class="episode-date" id="epDate"></div>
-    </div>
-    <a class="episode-link" id="epLink" href="#" target="_blank">לפרק המלא באתר KZRadio ←</a>
   </div>
 
   <div class="loading-indicator" id="loadingMsg"></div>
@@ -338,6 +343,13 @@ audio { display: none; }
         <svg id="iconPlay"  width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
         <svg id="iconPause" width="26" height="26" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
       </button>
+    </div>
+
+    <!-- Episode info below player -->
+    <div class="episode-meta" style="text-align:center; margin-top:1.2rem;">
+      <div class="episode-title" id="epTitle">טוען...</div>
+      <div class="episode-date" id="epDate"></div>
+      <a class="episode-link" id="epLink" href="#" target="_blank">לפרק המלא באתר KZRadio ←</a>
     </div>
 
     <button class="btn-random" onclick="playRandom()">↺ &nbsp; פרק אחר</button>
