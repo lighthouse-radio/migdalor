@@ -269,6 +269,7 @@ body::after {
   text-transform: uppercase;
   color: #3D2B1A;
   padding: 0.3rem 0;
+  margin-top: 1.4rem;
   border-bottom: 1px solid rgba(58,35,18,0.3);
   transition: color 0.25s, border-color 0.25s, text-shadow 0.25s;
   margin: 0 auto;
@@ -305,7 +306,7 @@ audio { display: none; }
   </div>
 
   <!-- Now playing info: track only -->
-  <div class="now-playing">
+  <div class="now-playing" id="nowPlaying" style="display:none">
     <div class="now-label">מתנגן עכשיו</div>
     <div id="trackNow" style="display:none">
       <div class="track-artist" id="trackArtist"></div>
@@ -438,6 +439,7 @@ function setPlayingState(state) {
   iconPause.style.display = state ? ''     : 'none';
   state ? _startWave() : _stopWave();
   document.getElementById('btnPlay').classList.toggle('is-playing', state);
+  if (state) document.getElementById('nowPlaying').style.display = '';
 }
 
 function updateTrackDisplay(currentTime) {
@@ -514,8 +516,17 @@ player.addEventListener('ended', () => {
   loadEpisode((currentIndex + 1) % episodes.length, 0);
 });
 
-player.addEventListener('timeupdate', () => {
+let _seeking = false;
+player.addEventListener('seeking', () => {
+  _seeking = true;
+  document.getElementById('trackNow').style.display = 'none';
+});
+player.addEventListener('seeked',  () => {
+  _seeking = false;
   updateTrackDisplay(player.currentTime);
+});
+player.addEventListener('timeupdate', () => {
+  if (!_seeking) updateTrackDisplay(player.currentTime);
 });
 
 function togglePlay() {
