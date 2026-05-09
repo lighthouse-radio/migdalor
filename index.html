@@ -373,8 +373,8 @@ audio { display: none; }
 <audio id="player" preload="none"></audio>
 
 <script>
-const EPOCH_MS = new Date('2022-01-03T20:00:00+02:00').getTime();
-const SLOT_SEC = 7200;
+const SLOT_SEC  = 7200;  // 2 h per episode slot
+const VOCAL_END = 77;   // episodes[0..76] vocal (pre-7.10.2023); [77..end] instrumental
 
 let episodes     = [];
 let currentIndex = 0;
@@ -563,7 +563,9 @@ function togglePlay() {
     if (player.readyState >= 2) {
       player.play().catch(() => {});
     } else {
-      loadEpisode(currentIndex, calcSeek(currentIndex));
+      const sched = calcSchedule();
+      currentIndex = sched.idx;
+      loadEpisode(sched.idx, sched.seek);
     }
   }
 }
@@ -576,16 +578,32 @@ function playRandom() {
   loadEpisode(idx, 0);
 }
 
-function calcEpisodeIndex() {
-  const total = episodes.length * SLOT_SEC;
-  const pos   = ((Date.now() - EPOCH_MS) / 1000 % total + total) % total;
-  return Math.floor(pos / SLOT_SEC) % episodes.length;
+function _israelSec() {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Jerusalem',
+    hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false
+  }).formatToParts(new Date());
+  const h = +parts.find(p => p.type === 'hour').value;
+  const m = +parts.find(p => p.type === 'minute').value;
+  const s = +parts.find(p => p.type === 'second').value;
+  return h * 3600 + m * 60 + s;
 }
 
-function calcSeek(idx) {
-  const total = episodes.length * SLOT_SEC;
-  const pos   = ((Date.now() - EPOCH_MS) / 1000 % total + total) % total;
-  return Math.max(0, pos - idx * SLOT_SEC);
+function calcSchedule() {
+  const sec   = _israelSec();
+  const isDay = sec >= 8 * 3600 && sec < 20 * 3600;
+  if (isDay) {
+    // Daytime 08:00–20:00 → vocal episodes (indices 0..VOCAL_END-1)
+    const pos  = sec - 8 * 3600;
+    const idx  = Math.floor(pos / SLOT_SEC) % VOCAL_END;
+    return { idx, seek: pos % SLOT_SEC };
+  } else {
+    // Nighttime 20:00–08:00 → instrumental episodes (indices VOCAL_END..end)
+    const nightSec = sec >= 20 * 3600 ? sec - 20 * 3600 : sec + 4 * 3600;
+    const pool = episodes.length - VOCAL_END;
+    const idx  = VOCAL_END + Math.floor(nightSec / SLOT_SEC) % pool;
+    return { idx, seek: nightSec % SLOT_SEC };
+  }
 }
 
 /* EPISODES_START */
@@ -595,16 +613,19 @@ const EPISODES_DATA = [{"tracks":[{"a":"Uzi Ramirez","ms":138243,"t":"Coming Hom
 Promise.resolve(EPISODES_DATA.length ? EPISODES_DATA : fetch('episodes.json').then(r => r.json()))
   .then(data => {
     episodes = data;
-    const idx = calcEpisodeIndex();
-    currentIndex = idx;
-    updateUI(idx);
+    const initSched = calcSchedule();
+    currentIndex = initSched.idx;
+    updateUI(initSched.idx);
     loadingMsg.textContent = 'TUNE IN AND DROP OUT';
     setPlayingState(false);
 
     document.addEventListener('click', function firstPlay() {
       if (!playing) {
         setPlayingState(true);
-        loadEpisode(idx, calcSeek(idx));
+        const s = calcSchedule();
+        currentIndex = s.idx;
+        updateUI(s.idx);
+        loadEpisode(s.idx, s.seek);
       }
       document.removeEventListener('click', firstPlay);
     }, { once: true });
