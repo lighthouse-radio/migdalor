@@ -444,6 +444,13 @@ function setPlayingState(state) {
   if (state) document.getElementById('nowPlaying').style.display = '';
 }
 
+// Detect text direction: RTL if the first strong character is Hebrew/Arabic
+function textDir(s) {
+  const m = (s || '').match(/[A-Za-z֐-׿؀-ۿ]/);
+  if (!m) return 'ltr';
+  return /[֐-׿؀-ۿ]/.test(m[0]) ? 'rtl' : 'ltr';
+}
+
 function updateTrackDisplay(currentTime) {
   const ep = episodes[currentIndex];
   if (!ep || !ep.tracks || ep.tracks.length === 0) {
@@ -475,9 +482,13 @@ function updateTrackDisplay(currentTime) {
   const blended = Math.round(fwdIdx * (1 - w) + bwdIdx * w);
   const track = tracks[Math.min(Math.max(blended, 0), tracks.length - 1)];
 
-  document.getElementById('trackArtist').textContent = track.a || '';
-  document.getElementById('trackArtist').style.display = track.a ? '' : 'none';
-  document.getElementById('trackTitle').textContent = track.t || '';
+  const artistEl = document.getElementById('trackArtist');
+  artistEl.textContent = track.a || '';
+  artistEl.dir = textDir(track.a);
+  artistEl.style.display = track.a ? '' : 'none';
+  const titleEl = document.getElementById('trackTitle');
+  titleEl.textContent = track.t || '';
+  titleEl.dir = textDir(track.t);
   document.getElementById('trackNow').style.display = '';
   if ('mediaSession' in navigator && navigator.mediaSession.metadata) {
     navigator.mediaSession.metadata.title  = track.t || ep.title;
@@ -487,7 +498,9 @@ function updateTrackDisplay(currentTime) {
 
 function updateUI(index) {
   const ep = episodes[index];
-  document.getElementById('epTitle').textContent = ep.title;
+  const epTitleEl = document.getElementById('epTitle');
+  epTitleEl.textContent = ep.title;
+  epTitleEl.dir = textDir(ep.title);
   document.getElementById('epDate').textContent  = ep.date || '';
   document.getElementById('epLink').href = ep.url;
   document.getElementById('trackNow').style.display = 'none';
