@@ -373,8 +373,10 @@ audio { display: none; }
 <audio id="player" preload="none"></audio>
 
 <script>
-const SLOT_SEC  = 7200;  // 2 h per episode slot
-const VOCAL_END = 77;   // episodes[0..76] vocal (pre-7.10.2023); [77..end] instrumental
+const SLOT_SEC        = 7200;  // 2 h per episode slot
+const VOCAL_END       = 77;   // episodes[0..76] vocal (pre-7.10.2023); [77..end] instrumental
+// Broadcast day starts at 08:00 Israel time; Jan 3 2022 = first episode
+const BROADCAST_EPOCH = new Date('2022-01-03T08:00:00+02:00').getTime();
 
 let episodes     = [];
 let currentIndex = 0;
@@ -590,19 +592,30 @@ function _israelSec() {
 }
 
 function calcSchedule() {
-  const sec   = _israelSec();
-  const isDay = sec >= 8 * 3600 && sec < 20 * 3600;
+  const now = new Date();
+  const sec = _israelSec();
+
+  // "Broadcast day" runs 08:00–08:00 (next day).
+  // broadcastSec: seconds elapsed since 08:00 today (or yesterday if before 08:00).
+  const broadcastSec = sec >= 8 * 3600 ? sec - 8 * 3600 : sec + 16 * 3600;
+  const broadcastDay = Math.floor((now.getTime() - BROADCAST_EPOCH) / 86400000);
+
+  // Each broadcast day has 12 day-slots (0-5) and 12 night-slots (6-11).
+  const slotInDay = Math.floor(broadcastSec / SLOT_SEC); // 0-11
+  const isDay     = slotInDay < 6;                       // 0-5 = day, 6-11 = night
+  const seek      = broadcastSec % SLOT_SEC;
+
   if (isDay) {
-    // Daytime 08:00–20:00 → vocal episodes (indices 0..VOCAL_END-1)
-    const pos  = sec - 8 * 3600;
-    const idx  = Math.floor(pos / SLOT_SEC) % VOCAL_END;
-    return { idx, seek: pos % SLOT_SEC };
+    // Vocal pool: cycles independently across days
+    const daySlot = broadcastDay * 6 + slotInDay;
+    const idx     = daySlot % VOCAL_END;
+    return { idx, seek };
   } else {
-    // Nighttime 20:00–08:00 → instrumental episodes (indices VOCAL_END..end)
-    const nightSec = sec >= 20 * 3600 ? sec - 20 * 3600 : sec + 4 * 3600;
-    const pool = episodes.length - VOCAL_END;
-    const idx  = VOCAL_END + Math.floor(nightSec / SLOT_SEC) % pool;
-    return { idx, seek: nightSec % SLOT_SEC };
+    // Instrumental pool: cycles independently across nights
+    const nightSlot = broadcastDay * 6 + (slotInDay - 6);
+    const pool      = episodes.length - VOCAL_END;
+    const idx       = VOCAL_END + nightSlot % pool;
+    return { idx, seek };
   }
 }
 
