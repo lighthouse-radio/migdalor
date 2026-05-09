@@ -555,17 +555,28 @@ player.addEventListener('ended', () => {
 });
 
 let _seeking = false;
+let _lastDisplayTime = -1;
+
 player.addEventListener('seeking', () => {
   _seeking = true;
   document.getElementById('trackNow').style.display = 'none';
 });
 player.addEventListener('seeked',  () => {
   _seeking = false;
+  _lastDisplayTime = -1;
   updateTrackDisplay(player.currentTime);
 });
 player.addEventListener('timeupdate', () => {
   if (!_seeking) updateTrackDisplay(player.currentTime);
 });
+
+// Heartbeat: timeupdate is unreliable on iOS/mobile — fires every 5 s as a safety net
+setInterval(() => {
+  if (!_seeking && playing && player.currentTime !== _lastDisplayTime) {
+    _lastDisplayTime = player.currentTime;
+    updateTrackDisplay(player.currentTime);
+  }
+}, 5000);
 
 function togglePlay() {
   if (playing) {
