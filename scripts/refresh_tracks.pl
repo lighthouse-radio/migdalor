@@ -152,7 +152,7 @@ sub _query {
 
 sub save_json {
     my ($data) = @_;
-    open my $out, ">:utf8", "episodes.json" or die "Cannot write episodes.json: $!";
-    print $out encode_json($data);
+    open my $out, ">", "episodes.json" or die "Cannot write episodes.json: $!";
+    print $out encode_json($data);   # encode_json outputs UTF-8 bytes — no :utf8 layer
     close $out;
 }

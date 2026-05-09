@@ -101,8 +101,8 @@ if (!@new_eps) {
 # ── Merge and save ────────────────────────────────────────────────────────────
 my @all = (@$existing_eps, @new_eps);
 
-open my $out, ">:utf8", $json_file or die "Cannot write $json_file: $!";
-print $out encode_json(\@all);
+open my $out, ">", $json_file or die "Cannot write $json_file: $!";
+print $out encode_json(\@all);   # encode_json outputs UTF-8 bytes — no :utf8 layer needed
 close $out;
 
 print STDERR "Done. Added " . scalar(@new_eps) . " episode(s). Total: " . scalar(@all) . "\n";
