@@ -377,6 +377,7 @@ const SLOT_SEC        = 7200;  // 2 h per episode slot
 const VOCAL_END       = 77;   // episodes[0..76] vocal (pre-7.10.2023); [77..end] instrumental
 // Broadcast day starts at 08:00 Israel time; Jan 3 2022 = first episode
 const BROADCAST_EPOCH = new Date('2022-01-03T08:00:00+02:00').getTime();
+const JINGLE_SEC      = 45;   // estimated jingle/intro at episode start (30–60 s)
 
 let episodes     = [];
 let currentIndex = 0;
@@ -460,16 +461,22 @@ function updateTrackDisplay(currentTime) {
   const tracks = ep.tracks;
   const epDur = (player.duration && isFinite(player.duration)) ? player.duration : SLOT_SEC;
 
-  // Forward pass
+  // Total declared track time; may differ from epDur due to estimation errors
+  const totalTrackSec = tracks.reduce((s, t) => s + (t.ms || 0) / 1000, 0);
+  // Effective music window: starts after jingle, ends at episode end
+  const musicDur = Math.max(totalTrackSec, epDur - JINGLE_SEC);
+
+  // Forward pass — offset by jingle so track 0 starts at JINGLE_SEC
+  const musicTime = Math.max(0, currentTime - JINGLE_SEC);
   let fwdElapsed = 0, fwdIdx = tracks.length - 1;
   for (let i = 0; i < tracks.length; i++) {
     const dur = (tracks[i].ms || 0) / 1000;
-    if (currentTime < fwdElapsed + dur) { fwdIdx = i; break; }
+    if (musicTime < fwdElapsed + dur) { fwdIdx = i; break; }
     fwdElapsed += dur;
   }
 
-  // Backward pass
-  const timeFromEnd = epDur - currentTime;
+  // Backward pass — anchored from the end of the episode
+  const timeFromEnd = Math.max(0, epDur - currentTime);
   let bwdElapsed = 0, bwdIdx = 0;
   for (let i = tracks.length - 1; i >= 0; i--) {
     const dur = (tracks[i].ms || 0) / 1000;
@@ -477,8 +484,8 @@ function updateTrackDisplay(currentTime) {
     bwdElapsed += dur;
   }
 
-  // Near start → trust forward, near end → trust backward
-  const w = Math.max(0, Math.min(1, currentTime / epDur));
+  // Near start → trust forward; near end → trust backward
+  const w = Math.max(0, Math.min(1, musicTime / Math.max(1, musicDur)));
   const blended = Math.round(fwdIdx * (1 - w) + bwdIdx * w);
   const track = tracks[Math.min(Math.max(blended, 0), tracks.length - 1)];
 
@@ -490,10 +497,6 @@ function updateTrackDisplay(currentTime) {
   titleEl.textContent = track.t || '';
   titleEl.dir = textDir(track.t);
   document.getElementById('trackNow').style.display = '';
-  if ('mediaSession' in navigator && navigator.mediaSession.metadata) {
-    navigator.mediaSession.metadata.title  = track.t || ep.title;
-    navigator.mediaSession.metadata.artist = track.a || 'רדיו מגדלור';
-  }
 }
 
 function updateUI(index) {
@@ -510,15 +513,10 @@ const ARTWORK = [{ src: 'https://lighthouse-radio.github.io/migdalor/logo.png', 
 
 function updateMediaSession(ep) {
   if (!('mediaSession' in navigator)) return;
-  const track = (function() {
-    if (!ep.tracks || !ep.tracks.length) return null;
-    const t = ep.tracks[0]; // rough — will be updated by updateTrackDisplay
-    return t;
-  })();
   navigator.mediaSession.metadata = new MediaMetadata({
-    title:  track ? track.t : ep.title,
-    artist: track ? track.a : 'רדיו מגדלור',
-    album:  ep.title,
+    title:   'רדיו מגדלור — ' + ep.title,
+    artist:  '',
+    album:   '',
     artwork: ARTWORK,
   });
   navigator.mediaSession.setActionHandler('play',  () => { setPlayingState(true);  player.play().catch(()=>{}); });

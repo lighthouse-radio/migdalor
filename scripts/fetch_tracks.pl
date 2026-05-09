@@ -169,6 +169,48 @@ sub _itunes_lookup {
             }
         }
     }
+
+    # Fallback: Deezer (strong on European/international catalogue)
+    my $dz = _deezer_lookup($artist, $title);
+    return $dz if $dz > 0;
+
+    # Fallback: MusicBrainz (better for live recordings, world music, non-US artists)
+    return _musicbrainz_lookup($artist, $title);
+}
+
+sub _deezer_lookup {
+    my ($artist, $title) = @_;
+    my $query = "$artist $title";
+    $query =~ s/[^\x00-\x7F]//g;
+    $query =~ s/[^a-zA-Z0-9 ]/ /g;
+    $query =~ s/ +/ /g;
+    $query =~ s/^ | $//g;
+    return 0 unless length($query) > 2;
+    $query =~ s/ /+/g;
+    my $url  = "https://api.deezer.com/search?q=$query&limit=5";
+    my $resp = `curl -sL --compressed -A "Mozilla/5.0" "$url"`;
+    select(undef, undef, undef, 0.3);
+    if ($resp =~ /"duration"\s*:\s*(\d+)/) {
+        return $1 * 1000 if $1 > 30;
+    }
+    return 0;
+}
+
+sub _musicbrainz_lookup {
+    my ($artist, $title) = @_;
+    my $query = "$artist $title";
+    $query =~ s/[^\x00-\x7F]//g;
+    $query =~ s/[^a-zA-Z0-9 ]/ /g;
+    $query =~ s/ +/ /g;
+    $query =~ s/^ | $//g;
+    return 0 unless length($query) > 2;
+    $query =~ s/ /+/g;
+    my $url = "https://musicbrainz.org/ws/2/recording/?query=$query&fmt=json&limit=5";
+    my $resp = `curl -sL --compressed -A "MigdalorRadio/1.0 (https://lighthouse-radio.github.io)" "$url"`;
+    select(undef, undef, undef, 1.1);  # MusicBrainz rate limit: 1 req/sec
+    if ($resp =~ /"length"\s*:\s*(\d+)/) {
+        return $1 if $1 > 30_000;
+    }
     return 0;
 }
 
