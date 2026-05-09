@@ -477,6 +477,10 @@ function updateTrackDisplay(currentTime) {
   document.getElementById('trackArtist').style.display = track.a ? '' : 'none';
   document.getElementById('trackTitle').textContent = track.t || '';
   document.getElementById('trackNow').style.display = '';
+  if ('mediaSession' in navigator && navigator.mediaSession.metadata) {
+    navigator.mediaSession.metadata.title  = track.t || ep.title;
+    navigator.mediaSession.metadata.artist = track.a || 'רדיו מגדלור';
+  }
 }
 
 function updateUI(index) {
@@ -485,6 +489,26 @@ function updateUI(index) {
   document.getElementById('epDate').textContent  = ep.date || '';
   document.getElementById('epLink').href = ep.url;
   document.getElementById('trackNow').style.display = 'none';
+}
+
+const ARTWORK = [{ src: 'https://lighthouse-radio.github.io/migdalor/logo.png', sizes: '512x512', type: 'image/png' }];
+
+function updateMediaSession(ep) {
+  if (!('mediaSession' in navigator)) return;
+  const track = (function() {
+    if (!ep.tracks || !ep.tracks.length) return null;
+    const t = ep.tracks[0]; // rough — will be updated by updateTrackDisplay
+    return t;
+  })();
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title:  track ? track.t : ep.title,
+    artist: track ? track.a : 'רדיו מגדלור',
+    album:  ep.title,
+    artwork: ARTWORK,
+  });
+  navigator.mediaSession.setActionHandler('play',  () => { setPlayingState(true);  player.play().catch(()=>{}); });
+  navigator.mediaSession.setActionHandler('pause', () => { setPlayingState(false); player.pause(); });
+  navigator.mediaSession.setActionHandler('nexttrack', () => playRandom());
 }
 
 function loadEpisode(index, seekTo) {
@@ -502,6 +526,7 @@ function loadEpisode(index, seekTo) {
     if (seekTo > 0 && seekTo < (player.duration || SLOT_SEC)) {
       player.currentTime = seekTo;
     }
+    updateMediaSession(ep);
     if (playing) player.play().catch(() => {});
   }, { once: true });
 
