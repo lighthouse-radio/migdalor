@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>רדיו מגדלור</title>
 <meta name="description" content="רדיו מגדלור — שידור אינטרנטי רצוף של ארכיון התכנית. מוזיקה עולמית, אמביינט, ג׳אז ופסיכדלי 24/7.">
 <meta name="keywords" content="רדיו מגדלור, מגדלור, ברק חיימוביץ, רדיו אינטרנטי, מוזיקה עולמית, אמביינט, ג׳אז, פסיכדלי, מוזיקה ישראלית, KZRadio, migdalor, lighthouse radio, Israeli radio, world music, ambient, jazz, psychedelic, online radio, Israel, streaming">
@@ -25,6 +25,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&family=Playfair+Display:wght@700&family=Frank+Ruhl+Libre:wght@400;700&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* PWA standalone: extend gradient behind the status bar, push content down */
+@media (display-mode: standalone) {
+  body { padding-top: env(safe-area-inset-top); }
+}
 
 /* ── Background: gradient + grain ── */
 body {
