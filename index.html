@@ -26,9 +26,18 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* PWA standalone: extend gradient behind the status bar, push content down */
+/* PWA standalone: extend gradient behind the Dynamic Island, anchor content at top */
 @media (display-mode: standalone) {
-  body { padding-top: env(safe-area-inset-top); }
+  body   { align-items: flex-start; }   /* start from top, not centered */
+  .station {
+    /* safe area + breathing room; replaces body padding so centering doesn't halve it */
+    padding-top: calc(env(safe-area-inset-top) + 1.2rem);
+  }
+  /* Reclaim the same vertical space so the page still fills the screen */
+  .lighthouse-wrap  { margin-bottom: 0.2rem; }  /* was 0.8 */
+  .logo             { margin-bottom: 0.9rem; }  /* was 1.6 */
+  .wave-container   { margin: 0 -1rem 1.1rem; } /* was 1.8 */
+  .now-playing      { margin-bottom: 1.5rem; }  /* was 2.2 */
 }
 
 /* ── Background: gradient + grain ── */
