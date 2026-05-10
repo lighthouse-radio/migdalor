@@ -262,9 +262,12 @@ sub estimate_missing {
 sub decode_html_entity {
     my ($s) = @_;
     1 while $s =~ s/&amp;/&/g;
+    $s =~ s/&quot;/"/g;
+    $s =~ s/&apos;/'/g;
     $s =~ s/&lt;/</g;
     $s =~ s/&gt;/>/g;
     $s =~ s/&#(\d+);/chr($1)/ge;
+    $s =~ s/&#x([0-9a-fA-F]+);/chr(hex($1))/ge;
     $s =~ s/\s+/ /g;
     $s =~ s/^ | $//g;
     return $s;
@@ -275,6 +278,8 @@ sub decode_html_basic {
     $s =~ s/&#8211;/\x{2013}/g;
     $s =~ s/&#8212;/\x{2014}/g;
     $s =~ s/&amp;/&/g;
+    $s =~ s/&quot;/"/g;
+    $s =~ s/&apos;/'/g;
     $s =~ s/\x{200B}//g;
     return $s;
 }
