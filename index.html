@@ -4,14 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>רדיו מגדלור</title>
-<meta name="description" content="רדיו מגדלור — שידור רצוף של ארכיון התכנית">
+<meta name="description" content="רדיו מגדלור — שידור אינטרנטי רצוף של ארכיון התכנית. מוזיקה עולמית, אמביינט, ג׳אז ופסיכדלי 24/7.">
+<meta name="keywords" content="רדיו מגדלור, מגדלור, ברק חיימוביץ, רדיו אינטרנטי, מוזיקה עולמית, אמביינט, ג׳אז, פסיכדלי, מוזיקה ישראלית, KZRadio, migdalor, lighthouse radio, Israeli radio, world music, ambient, jazz, psychedelic, online radio, Israel, streaming">
+<meta name="robots" content="index, follow">
 <meta property="og:title" content="רדיו מגדלור">
-<meta property="og:description" content="שידור רצוף של ארכיון התכנית — הצטרפו לשידור">
+<meta property="og:description" content="שידור אינטרנטי רצוף של ארכיון התכנית — מוזיקה עולמית, אמביינט וג׳אז 24/7">
 <meta property="og:image" content="https://lighthouse-radio.github.io/migdalor/logo.png">
 <meta property="og:url" content="https://lighthouse-radio.github.io/migdalor">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://lighthouse-radio.github.io/migdalor/logo.png">
+<!-- PWA / iOS home screen -->
+<link rel="apple-touch-icon" href="logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="מגדלור">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/png" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&family=Playfair+Display:wght@700&family=Frank+Ruhl+Libre:wght@400;700&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
@@ -514,7 +522,7 @@ const ARTWORK = [{ src: 'https://lighthouse-radio.github.io/migdalor/logo.png', 
 function updateMediaSession(ep) {
   if (!('mediaSession' in navigator)) return;
   navigator.mediaSession.metadata = new MediaMetadata({
-    title:   'רדיו מגדלור — ' + ep.title,
+    title:   'רדיו מגדלור - ' + ep.title,
     artist:  '',
     album:   '',
     artwork: ARTWORK,
