@@ -20,6 +20,8 @@
 <meta name="apple-mobile-web-app-title" content="מגדלור">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="logo.png">
+<!-- Preload artwork so it's cached before AirPlay/CarPlay requests it -->
+<link rel="preload" href="https://lighthouse-radio.github.io/migdalor/logo.png" as="image" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&family=Playfair+Display:wght@700&family=Frank+Ruhl+Libre:wght@400;700&family=Josefin+Sans:wght@300;400;600&display=swap" rel="stylesheet">
@@ -531,13 +533,13 @@ function updateUI(index) {
   document.getElementById('trackNow').style.display = 'none';
 }
 
-const ARTWORK = [{ src: 'https://lighthouse-radio.github.io/migdalor/logo.png', sizes: '512x512', type: 'image/png' }];
+const ARTWORK = [{ src: 'https://lighthouse-radio.github.io/migdalor/logo.png', sizes: '500x500', type: 'image/png' }];
 
 function updateMediaSession(ep) {
   if (!('mediaSession' in navigator)) return;
   navigator.mediaSession.metadata = new MediaMetadata({
-    title:   'רדיו מגדלור - ' + ep.title,
-    artist:  '',
+    title:   ep.title,
+    artist:  'Lighthouse Radio | רדיו מגדלור',
     album:   '',
     artwork: ARTWORK,
   });
