@@ -1,0 +1,16 @@
+{
+  "name": "רדיו מגדלור",
+  "short_name": "מגדלור",
+  "description": "שידור אינטרנטי רצוף של ארכיון התכנית — מוזיקה עולמית, אמביינט וג׳אז 24/7",
+  "start_url": "/migdalor/",
+  "scope": "/migdalor/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#D8BFD8",
+  "theme_color": "#CC7722",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    { "src": "logo.png", "sizes": "500x500", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

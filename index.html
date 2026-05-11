@@ -20,6 +20,8 @@
 <meta name="apple-mobile-web-app-title" content="מגדלור">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" type="image/png" href="logo.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#CC7722">
 <!-- Preload artwork so it's cached before AirPlay/CarPlay requests it -->
 <link rel="preload" href="https://lighthouse-radio.github.io/migdalor/logo.png" as="image" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -378,6 +380,24 @@ audio { display: none; }
     </div>
 
     <button class="btn-random" onclick="playRandom()">↺&thinsp;פרק אחר</button>
+
+    <!-- Install button — shown only when not in standalone and platform supports it -->
+    <div id="installWrap" style="display:none; margin-top:1rem; position:relative;">
+      <button id="installBtn" class="btn-random"
+              style="background:rgba(0,206,209,0.12); border-color:rgba(0,206,209,0.5); color:#00CED1;"
+              onclick="handleInstall()">
+        ⊕&thinsp;הוסף למסך הבית
+      </button>
+      <!-- iOS tooltip -->
+      <div id="iosTooltip" style="display:none; position:absolute; bottom:calc(100% + 10px); left:50%; transform:translateX(-50%);
+           background:#1A1A1A; color:#f0e8d8; font-family:'Josefin Sans',sans-serif; font-size:0.75rem;
+           letter-spacing:0.05em; padding:0.6rem 0.9rem; border-radius:8px; white-space:nowrap;
+           box-shadow:0 4px 16px rgba(0,0,0,0.4); z-index:100;">
+        לחץ על <strong>□↑</strong> ואז <strong>״הוסף למסך הבית״</strong>
+        <div style="position:absolute; top:100%; left:50%; transform:translateX(-50%);
+             border:6px solid transparent; border-top-color:#1A1A1A;"></div>
+      </div>
+    </div>
   </div>
 
   <div style="margin-top:2.4rem; padding-top:1.6rem; border-top:1px solid rgba(26,26,26,0.15);">
@@ -692,6 +712,42 @@ Promise.resolve(EPISODES_DATA.length ? EPISODES_DATA : fetch('episodes.json').th
   .catch(() => {
     document.getElementById('epTitle').textContent = 'שגיאה בטעינת הנגן';
   });
+
+// ── PWA install prompt ────────────────────────────────────────────────────────
+let _installPrompt = null;
+const _isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                   || navigator.standalone === true;
+const _isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+if (!_isStandalone) {
+  if (_isIOS) {
+    // iOS: show button that reveals a tooltip with manual instructions
+    document.getElementById('installWrap').style.display = '';
+  } else {
+    // Android/Chrome: catch the native install prompt and fire it on click
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      _installPrompt = e;
+      document.getElementById('installWrap').style.display = '';
+    });
+  }
+}
+
+function handleInstall() {
+  if (_installPrompt) {
+    _installPrompt.prompt();
+    _installPrompt.userChoice.then(() => {
+      _installPrompt = null;
+      document.getElementById('installWrap').style.display = 'none';
+    });
+  } else if (_isIOS) {
+    const tip = document.getElementById('iosTooltip');
+    tip.style.display = tip.style.display === 'none' ? '' : 'none';
+    if (tip.style.display !== 'none') {
+      setTimeout(() => { tip.style.display = 'none'; }, 6000);
+    }
+  }
+}
 </script>
 <script data-goatcounter="https://migdalor.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
