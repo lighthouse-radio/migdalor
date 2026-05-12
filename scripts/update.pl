@@ -20,6 +20,8 @@ my @exclude_patterns = (
     qr/presents:/i,
     qr/in the [Ss]tudio/,
     qr/ AKA .+ [Ss]tudio/,
+    # Guest sessions: "[Hebrew name] – [venue]" pattern
+    qr/^\p{Hebrew}.*\x{2013}/,
 );
 
 # ── Load existing episodes ────────────────────────────────────────────────────
