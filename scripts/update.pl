@@ -23,7 +23,7 @@ my @exclude_patterns = (
 );
 
 # ── Load existing episodes ────────────────────────────────────────────────────
-open my $fh, "<:utf8", $json_file or die "Cannot read $json_file: $!";
+open my $fh, "<", $json_file or die "Cannot read $json_file: $!";
 my $raw = do { local $/; <$fh> };
 close $fh;
 
@@ -41,6 +41,7 @@ for my $page (1..5) {
     while ($html =~ m{href="(https://www\.kzradio\.net/shows/migdalor/(\d+))"}g) {
         my ($ep_url, $id) = ($1, $2);
         next if $known_ids{$id};
+        next if grep { $_ eq $ep_url } @new_urls;  # no duplicates within scan
         push @new_urls, $ep_url;
         $found_new = 1;
     }
