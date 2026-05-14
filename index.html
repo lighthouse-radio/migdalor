@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>רדיו מגדלור</title>
-<meta name="description" content="רדיו מגדלור — שידור אינטרנטי רצוף של ארכיון התכנית. מוזיקה עולמית, אמביינט, ג׳אז ופסיכדלי 24/7.">
+<meta name="description" content="רדיו מגדלור — שידור אינטרנטי רצוף של ארכיון התכנית. פסיכדליה, גרוב, אמביינט, ג׳אז 24/7.">
 <meta name="keywords" content="רדיו מגדלור, מגדלור, ברק חיימוביץ, רדיו אינטרנטי, מוזיקה עולמית, אמביינט, ג׳אז, פסיכדלי, מוזיקה ישראלית, KZRadio, migdalor, lighthouse radio, Israeli radio, world music, ambient, jazz, psychedelic, online radio, Israel, streaming">
 <meta name="robots" content="index, follow">
 <meta property="og:title" content="רדיו מגדלור">
-<meta property="og:description" content="שידור אינטרנטי רצוף של ארכיון התכנית — מוזיקה עולמית, אמביינט וג׳אז 24/7">
+<meta property="og:description" content="שידור אינטרנטי רצוף של ארכיון התכנית — פסיכדליה, גרוב, אמביינט, ג׳אז 24/7">
 <meta property="og:image" content="https://lighthouse-radio.github.io/migdalor/logo.png">
 <meta property="og:url" content="https://lighthouse-radio.github.io/migdalor">
 <meta property="og:type" content="website">
@@ -562,6 +562,10 @@ function loadEpisode(index, seekTo) {
   updateUI(index);
   const ep = episodes[index];
 
+  // Suppress timeupdate immediately — don't show stale track during load+seek
+  _seeking = true;
+  document.getElementById('trackNow').style.display = 'none';
+
   player.src = ep.mp3;
   player.load();
   loadingMsg.textContent = 'טוען...';
@@ -571,6 +575,11 @@ function loadEpisode(index, seekTo) {
     loadingMsg.textContent = '';
     if (seekTo > 0 && seekTo < (player.duration || SLOT_SEC)) {
       player.currentTime = seekTo;
+      // _seeking stays true until the 'seeked' event fires
+    } else {
+      // No seek needed — release immediately and show correct track
+      _seeking = false;
+      updateTrackDisplay(player.currentTime);
     }
     updateMediaSession(ep);
     if (playing) player.play().catch(() => {});
