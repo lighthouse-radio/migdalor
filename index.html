@@ -612,8 +612,19 @@ player.addEventListener('timeupdate', () => {
   if (!_seeking) updateTrackDisplay(player.currentTime);
 });
 
+// Resume after phone-call / audio-session interruption (immediate, on app foreground)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && playing && player.paused && !_seeking && player.readyState >= 2) {
+    player.play().catch(() => {});
+  }
+});
+
 // Heartbeat: timeupdate is unreliable on iOS/mobile — fires every 5 s as a safety net
+// Also catches interruption recovery when visibility doesn't change (e.g. already in foreground)
 setInterval(() => {
+  if (playing && player.paused && !_seeking && player.readyState >= 2) {
+    player.play().catch(() => {});
+  }
   if (!_seeking && playing && player.currentTime !== _lastDisplayTime) {
     _lastDisplayTime = player.currentTime;
     updateTrackDisplay(player.currentTime);
