@@ -412,6 +412,22 @@ const VOCAL_END       = 77;   // episodes[0..76] vocal (pre-7.10.2023); [77..end
 const BROADCAST_EPOCH = new Date('2022-01-03T08:00:00+02:00').getTime();
 const JINGLE_SEC      = 45;   // estimated jingle/intro at episode start (30–60 s)
 
+// Deterministic Fisher-Yates shuffle — gives a fixed pseudo-random permutation of [0..n).
+// Used so vocal episodes don't air in sequential order (ep N always followed by N+1).
+// Seed is arbitrary but fixed; changing it would shift the entire vocal schedule.
+function _makePermutation(n, seed) {
+  const a = Array.from({length: n}, (_, i) => i);
+  let s = seed >>> 0;
+  for (let i = n - 1; i > 0; i--) {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    const j = s % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+// Vocal permutation is stable forever (77 is fixed by the Oct-2023 cutoff).
+const VOCAL_PERM = _makePermutation(VOCAL_END, 0x4D49474C);
+
 let episodes     = [];
 let currentIndex = 0;
 let playing      = false;
@@ -681,15 +697,21 @@ function calcSchedule() {
   const seek      = broadcastSec % SLOT_SEC;
 
   if (isDay) {
-    // Vocal pool: cycles independently across days
+    // Vocal pool: use fixed permutation so episodes don't air in sequential order.
+    // VOCAL_PERM cycles through all 77 episodes pseudo-randomly (~13 days per cycle).
     const daySlot = broadcastDay * 6 + slotInDay;
-    const idx     = daySlot % VOCAL_END;
+    const idx     = VOCAL_PERM[daySlot % VOCAL_END];
     return { idx, seek };
   } else {
-    // Instrumental pool: cycles independently across nights
+    // Instrumental pool: use a prime step (97) coprime to virtually all pool sizes,
+    // so episodes are spread non-sequentially without a fixed permutation that would
+    // shift every time a new episode is added.
     const nightSlot = broadcastDay * 6 + (slotInDay - 6);
     const pool      = episodes.length - VOCAL_END;
-    const idx       = VOCAL_END + nightSlot % pool;
+    // 97 is prime; gcd(97, pool) = 1 for all realistic pool sizes (would need exactly
+    // 97 instrumental episodes to fail — currently ~110, grows weekly).
+    const INST_STEP = (pool % 97 !== 0) ? 97 : 101;
+    const idx       = VOCAL_END + (nightSlot * INST_STEP) % pool;
     return { idx, seek };
   }
 }
