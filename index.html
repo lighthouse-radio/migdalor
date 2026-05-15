@@ -586,6 +586,14 @@ function loadEpisode(index, seekTo) {
   player.load();
   loadingMsg.textContent = 'טוען...';
 
+  // Start playback immediately (before canplay) when no seek is needed.
+  // On iOS, calling play() right after load() keeps the audio session alive across
+  // episode transitions in the background — without this, the OS ends the session
+  // during the canplay wait and blocks the subsequent play() call.
+  if (seekTo === 0 && playing) {
+    player.play().catch(() => {});
+  }
+
   player.addEventListener('canplay', function onReady() {
     player.removeEventListener('canplay', onReady);
     loadingMsg.textContent = '';
@@ -598,7 +606,8 @@ function loadEpisode(index, seekTo) {
       updateTrackDisplay(player.currentTime);
     }
     updateMediaSession(ep);
-    if (playing) player.play().catch(() => {});
+    // Only call play() if not already playing (the early call above may have succeeded)
+    if (playing && player.paused) player.play().catch(() => {});
   }, { once: true });
 
   player.addEventListener('error', function onErr() {
