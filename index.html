@@ -492,6 +492,8 @@ function setPlayingState(state) {
   state ? _startWave() : _stopWave();
   document.getElementById('btnPlay').classList.toggle('is-playing', state);
   if (state) document.getElementById('nowPlaying').style.display = '';
+  if ('mediaSession' in navigator)
+    navigator.mediaSession.playbackState = state ? 'playing' : 'paused';
 }
 
 // Detect text direction: RTL if the first strong character is Hebrew/Arabic
@@ -568,10 +570,43 @@ function updateMediaSession(ep) {
     album:   '',
     artwork: ARTWORK,
   });
+  navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
   navigator.mediaSession.setActionHandler('play',  () => { setPlayingState(true);  player.play().catch(()=>{}); });
   navigator.mediaSession.setActionHandler('pause', () => { setPlayingState(false); player.pause(); });
-  navigator.mediaSession.setActionHandler('nexttrack', () => playRandom());
+  navigator.mediaSession.setActionHandler('stop',  () => { setPlayingState(false); player.pause(); });
+  navigator.mediaSession.setActionHandler('nexttrack',     () => playRandom());
+  navigator.mediaSession.setActionHandler('previoustrack', () => {
+    const prev = (currentIndex - 1 + episodes.length) % episodes.length;
+    setPlayingState(true);
+    loadEpisode(prev, 0);
+  });
+  // Disable seek arrows — this is a radio station, not a podcast scrubber
+  try { navigator.mediaSession.setActionHandler('seekforward',  null); } catch(e) {}
+  try { navigator.mediaSession.setActionHandler('seekbackward', null); } catch(e) {}
+  updatePositionState();
 }
+
+function updatePositionState() {
+  if (!('mediaSession' in navigator) || !isFinite(player.duration)) return;
+  try {
+    navigator.mediaSession.setPositionState({
+      duration:     player.duration,
+      playbackRate: player.playbackRate || 1,
+      position:     Math.min(player.currentTime, player.duration),
+    });
+  } catch(e) {}
+}
+
+// Keep lock-screen playback state in sync with OS-initiated play/pause
+// (phone call, Siri, Bluetooth disconnect, etc.)
+player.addEventListener('play',  () => {
+  if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+});
+player.addEventListener('pause', () => {
+  // Only mark as paused if the user intended to stop — not during seek/load
+  if ('mediaSession' in navigator && !_seeking)
+    navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+});
 
 function loadEpisode(index, seekTo) {
   currentIndex = index;
@@ -632,9 +667,13 @@ player.addEventListener('seeked',  () => {
   _seeking = false;
   _lastDisplayTime = -1;
   updateTrackDisplay(player.currentTime);
+  updatePositionState();
 });
 player.addEventListener('timeupdate', () => {
-  if (!_seeking) updateTrackDisplay(player.currentTime);
+  if (!_seeking) {
+    updateTrackDisplay(player.currentTime);
+    updatePositionState();
+  }
 });
 
 // Resume after phone-call / audio-session interruption (immediate, on app foreground)
