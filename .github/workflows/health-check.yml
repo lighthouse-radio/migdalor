@@ -1,0 +1,29 @@
+name: Stale check
+
+# Fails (and GitHub emails the repo owner) if no commit to episodes.json
+# has happened in the last 10 days — signals that either update.pl is broken
+# or GitHub's scheduled runs are being skipped.
+
+on:
+  schedule:
+    - cron: '0 10 * * *'   # Every day at 10:00 UTC (13:00 Israel) — 4h after update cron
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need full history to look at past commits
+
+      - name: Check episodes.json freshness
+        run: |
+          LAST_TS=$(git log -1 --format=%ct -- episodes.json)
+          NOW_TS=$(date +%s)
+          AGE_DAYS=$(( (NOW_TS - LAST_TS) / 86400 ))
+          echo "Last episodes.json commit was $AGE_DAYS days ago."
+          if [ "$AGE_DAYS" -gt 10 ]; then
+            echo "::error::episodes.json has not been updated in $AGE_DAYS days — auto-update may be broken."
+            exit 1
+          fi
