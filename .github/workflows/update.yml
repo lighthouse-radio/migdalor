@@ -2,7 +2,7 @@ name: Update episodes
 
 on:
   schedule:
-    - cron: '0 6 * * 2'   # Every Tuesday at 06:00 UTC (09:00 Israel time, after Monday evening show)
+    - cron: '0 6 * * *'   # Every day at 06:00 UTC (09:00 Israel) — script is idempotent, skips known episodes. Daily run guards against GitHub's occasional skipped scheduled runs.
   workflow_dispatch:        # Also allows manual trigger from GitHub UI
 
 jobs:
