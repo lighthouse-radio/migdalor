@@ -1,0 +1,29 @@
+name: Keepalive
+
+# GitHub automatically disables scheduled workflows after 60 days of repo
+# inactivity. This workflow re-enables any disabled scheduled workflow via
+# the API so the daily episode update never silently stops.
+
+on:
+  schedule:
+    - cron: '0 7 * * 0'   # Every Sunday at 07:00 UTC — well before update.yml runs
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable any disabled scheduled workflows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api repos/$REPO/actions/workflows --paginate \
+            --jq '.workflows[] | select(.state == "disabled_inactivity") | .id' \
+          | while read -r wf_id; do
+              echo "Re-enabling workflow $wf_id"
+              gh api -X PUT repos/$REPO/actions/workflows/$wf_id/enable
+            done
+          echo "Done."
