@@ -39,14 +39,22 @@ for my $page (1..5) {
     my $url = $page == 1 ? $base_url : "$base_url/page/$page";
     my $html = fetch($url);
     my $found_new = 0;
+    my $total_links = 0;
 
     while ($html =~ m{href="(https://www\.kzradio\.net/shows/migdalor/(\d+))"}g) {
         my ($ep_url, $id) = ($1, $2);
+        $total_links++;
         next if $known_ids{$id};
         next if grep { $_ eq $ep_url } @new_urls;  # no duplicates within scan
         push @new_urls, $ep_url;
         $found_new = 1;
     }
+
+    # Page 1 should always contain episode links — zero means the listing
+    # page loaded but its content looks nothing like the expected page
+    # (e.g. a block/interstitial page that slipped past fetch()'s checks).
+    die "::error::$url loaded but contained zero episode links — site content may have changed or the runner is being blocked.\n"
+        if $page == 1 && $total_links == 0;
 
     last unless $found_new;
     select(undef, undef, undef, 0.5);
@@ -114,8 +122,18 @@ print STDERR "Done. Added " . scalar(@new_eps) . " episode(s). Total: " . scalar
 
 sub fetch {
     my ($url) = @_;
-    my $bytes = `curl -sL --compressed -A "Mozilla/5.0" "$url"`;
-    return decode('UTF-8', $bytes, Encode::FB_DEFAULT);
+    for my $attempt (1..3) {
+        my $bytes = `curl -sL --compressed --max-time 20 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36" -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" -H "Accept-Language: en-US,en;q=0.9,he;q=0.8" "$url"`;
+        my $curl_ok = $? == 0;
+        my $blocked = $bytes =~ /Please wait while your request is being verified|cf-browser-verification|Attention Required.*Cloudflare/s;
+        if ($curl_ok && length($bytes) > 500 && !$blocked) {
+            return decode('UTF-8', $bytes, Encode::FB_DEFAULT);
+        }
+        print STDERR "  fetch() attempt $attempt/3 failed for $url (exit=$?, bytes="
+            . length($bytes) . ", blocked=" . ($blocked ? "yes" : "no") . "), retrying...\n";
+        select(undef, undef, undef, 3 * $attempt);
+    }
+    die "::error::fetch() failed after 3 attempts for $url — site may be blocking this runner's IP.\n";
 }
 
 sub fetch_tracks_from_html {
