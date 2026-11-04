@@ -3,6 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+(function () {
+  var THEME = { dawn: '#E8A666', day: '#D9A24E', sunset: '#CC7722', night: '#5C4870' };
+  var h = new Date().getHours();
+  var period = (h >= 5 && h < 8) ? 'dawn'
+             : (h >= 8 && h < 17) ? 'day'
+             : (h >= 17 && h < 20) ? 'sunset'
+             : 'night';
+  document.documentElement.setAttribute('data-period', period);
+  document.addEventListener('DOMContentLoaded', function () {
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', THEME[period]);
+  });
+})();
+</script>
 <title>רדיו מגדלור</title>
 <meta name="description" content="רדיו מגדלור — שידור אינטרנטי רצוף של ארכיון התכנית. פסיכדליה, גרוב, אמביינט, ג׳אז 24/7.">
 <meta name="keywords" content="רדיו מגדלור, מגדלור, ברק חיימוביץ, רדיו אינטרנטי, מוזיקה עולמית, אמביינט, ג׳אז, פסיכדלי, מוזיקה ישראלית, KZRadio, migdalor, lighthouse radio, Israeli radio, world music, ambient, jazz, psychedelic, online radio, Israel, streaming">
@@ -63,13 +78,36 @@
   .now-playing      { margin-bottom: 1.5rem; }  /* was 2.2 */
 }
 
-/* ── Background: gradient + grain ── */
+/* ── Background: gradient + grain ──
+   Sky shifts with time of day (set via [data-period] on <html>, see head script).
+   "sunset" values match the original fixed palette — the fallback if JS never runs. */
+:root {
+  --sky-0: #D8BFD8;
+  --sky-55: #DDB88A;
+  --sky-100: #CC7722;
+}
+:root[data-period="dawn"] {
+  --sky-0: #B9C6E0;
+  --sky-55: #E3C9A8;
+  --sky-100: #E8A666;
+}
+:root[data-period="day"] {
+  --sky-0: #AFD3E0;
+  --sky-55: #D9D2A8;
+  --sky-100: #D9A24E;
+}
+:root[data-period="night"] {
+  --sky-0: #9AA8CC;
+  --sky-55: #8A7AA0;
+  --sky-100: #5C4870;
+}
+
 body {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #D8BFD8 0%, #DDB88A 55%, #CC7722 100%);
+  background: linear-gradient(180deg, var(--sky-0) 0%, var(--sky-55) 55%, var(--sky-100) 100%);
   font-family: 'Josefin Sans', 'Noto Sans', 'Helvetica Neue', sans-serif;
   color: #1A1A1A;
   position: relative;
